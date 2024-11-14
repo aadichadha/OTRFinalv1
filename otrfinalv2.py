@@ -4,103 +4,144 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+# Title and Introduction
+st.title("Baseball Metrics Analyzer")
+st.write("Upload your Bat Speed and Exit Velocity CSV files to generate a comprehensive report.")
+
+# File Uploads
+bat_speed_file = st.file_uploader("Upload Bat Speed (mph) File", type="csv")
+exit_velocity_file = st.file_uploader("Upload Exit Velocity File", type="csv")
+
+# Ask for Player Level
+player_level = st.selectbox("Select Player Level", ["Youth", "High School", "College", "Indy", "Affiliate", "Professional"])
+
+# Benchmarks Based on Level
+benchmarks = {
+    "Youth": {"Avg EV": 58.4, "Top 8th EV": 70.19, "Avg BatSpeed": 49.21, "90th% BatSpeed": 52.81},
+    "High School": {"Avg EV": 74.54, "Top 8th EV": 86.75, "Avg BatSpeed": 62.64, "90th% BatSpeed": 67.02},
+    "College": {"Avg EV": 81.57, "Top 8th EV": 94.44, "Avg BatSpeed": 67.53, "90th% BatSpeed": 72.54},
+    "Indy": {"Avg EV": 85.99, "Top 8th EV": 98.12, "Avg BatSpeed": 69.2, "90th% BatSpeed": 74.04},
+    "Affiliate": {"Avg EV": 85.49, "Top 8th EV": 98.71, "Avg BatSpeed": 70.17, "90th% BatSpeed": 75.14},
+    "Professional": {"Avg EV": 94.3, "Top 8th EV": 104.5, "Avg BatSpeed": 78.2, "90th% BatSpeed": 82.3}
+}
+
+# Initialize Metrics
+bat_speed_metrics = ""
+exit_velocity_metrics = ""
+
+# Process Bat Speed File
+if bat_speed_file:
+    df_bat_speed = pd.read_csv(bat_speed_file, skiprows=20)
+    df_bat_speed.columns = df_bat_speed.columns.str.strip()
+    bat_speed_data = df_bat_speed["Bat Speed (mph)"]
+
+    # Calculate Bat Speed Metrics
+    player_avg_bat_speed = bat_speed_data.mean()
+    top_10_percent_bat_speed = bat_speed_data.quantile(0.90)
+    top_10_percent_swings = df_bat_speed[bat_speed_data >= top_10_percent_bat_speed]
+
+    # Average Attack Angle for Top 10% Bat Speed Swings
+    if "Attack Angle" in df_bat_speed.columns:
+        avg_attack_angle_top_10 = top_10_percent_swings["Attack Angle"].mean()
+    else:
+        avg_attack_angle_top_10 = None
+
+    # Average Time to Contact
+    if "Time to Contact" in df_bat_speed.columns:
+        avg_time_to_contact = df_bat_speed["Time to Contact"].mean()
+    else:
+        avg_time_to_contact = None
+
+    # Format Bat Speed Metrics
+    bat_speed_benchmark = benchmarks[player_level]["Avg BatSpeed"]
+    top_90_benchmark = benchmarks[player_level]["90th% BatSpeed"]
+    bat_speed_metrics = (
+        "### Bat Speed Metrics\n"
+        f"- **Player Average Bat Speed:** {player_avg_bat_speed:.2f} mph (Benchmark: {bat_speed_benchmark} mph)\n"
+        f"- **Top 10% Bat Speed:** {top_10_percent_bat_speed:.2f} mph (Benchmark: {top_90_benchmark} mph)\n"
+    )
+    if avg_attack_angle_top_10 is not None:
+        bat_speed_metrics += f"- **Average Attack Angle (Top 10% Bat Speed Swings):** {avg_attack_angle_top_10:.2f}°\n"
+    else:
+        bat_speed_metrics += "- **Average Attack Angle:** Data not available\n"
+    if avg_time_to_contact is not None:
+        bat_speed_metrics += f"- **Average Time to Contact:** {avg_time_to_contact:.2f} seconds\n"
+    else:
+        bat_speed_metrics += "- **Average Time to Contact:** Data not available\n"
+
+# Process Exit Velocity File
+if exit_velocity_file:
+    df_exit_velocity = pd.read_csv(exit_velocity_file, skiprows=20)
+    df_exit_velocity.columns = df_exit_velocity.columns.str.strip()
+    exit_velocity_data = df_exit_velocity["Velo"]
+
+    # Ignore zero values for exit velocity
+    exit_velocity_avg = exit_velocity_data[exit_velocity_data > 0].mean()
+    top_8_percent_exit_velocity = exit_velocity_data.quantile(0.92)
+    top_8_percent_swings = df_exit_velocity[exit_velocity_data >= top_8_percent_exit_velocity]
+
+    # Average Launch Angle and Distance for Top 8% Exit Velocity Swings
+    if "Launch Angle" in df_exit_velocity.columns:
+        avg_launch_angle_top_8 = top_8_percent_swings["Launch Angle"].mean()
+    else:
+        avg_launch_angle_top_8 = None
+
+    if "Distance" in df_exit_velocity.columns:
+        avg_distance_top_8 = top_8_percent_swings["Distance"].mean()
+    else:
+        avg_distance_top_8 = None
+
+    # Format Exit Velocity Metrics
+    ev_benchmark = benchmarks[player_level]["Avg EV"]
+    top_8_benchmark = benchmarks[player_level]["Top 8th EV"]
+    exit_velocity_metrics = (
+        "### Exit Velocity Metrics\n"
+        f"- **Average Exit Velocity:** {exit_velocity_avg:.2f} mph (Benchmark: {ev_benchmark} mph)\n"
+        f"- **Top 8% Exit Velocity:** {top_8_percent_exit_velocity:.2f} mph (Benchmark: {top_8_benchmark} mph)\n"
+    )
+    if avg_launch_angle_top_8 is not None:
+        exit_velocity_metrics += f"- **Average Launch Angle (Top 8% Exit Velocity Swings):** {avg_launch_angle_top_8:.2f}°\n"
+    else:
+        exit_velocity_metrics += "- **Average Launch Angle:** Data not available\n"
+    if avg_distance_top_8 is not None:
+        exit_velocity_metrics += f"- **Average Distance (Top 8% Exit Velocity Swings):** {avg_distance_top_8:.2f} ft\n"
+    else:
+        exit_velocity_metrics += "- **Average Distance:** Data not available\n"
+
+# Display Results
+st.write("## Calculated Metrics")
+if exit_velocity_metrics:
+    st.markdown(exit_velocity_metrics)
+if bat_speed_metrics:
+    st.markdown(bat_speed_metrics)
+
 # Email Configuration
 email_address = "aadichadha@gmail.com"
 email_password = "eeoi odag olix nnfc"  # Your app-specific password
 smtp_server = "smtp.gmail.com"
 smtp_port = 587
 
-# Title and File Upload
-st.title("Baseball Metrics Analyzer")
-uploaded_file = st.file_uploader("Upload your CSV file", type="csv")
-
-# Function to send an email
-def send_email(recipient_email, subject, body):
-    try:
+# Option to Email the Report
+st.write("## Email the Report")
+recipient_email = st.text_input("Enter Email Address")
+if st.button("Send Report"):
+    if recipient_email:
+        # Combine the reports for both files
+        report = f"{exit_velocity_metrics}\n\n{bat_speed_metrics}"
         msg = MIMEMultipart()
         msg['From'] = email_address
         msg['To'] = recipient_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
+        msg['Subject'] = "Baseball Metrics Report"
+        msg.attach(MIMEText(report, 'plain'))
 
-        # Connect to the SMTP server and send the email
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()  # Secure the connection
-            server.login(email_address, email_password)
-            server.send_message(msg)
-            st.success("Email sent successfully!")
-    except Exception as e:
-        st.error(f"Failed to send email: {e}")
-
-if uploaded_file:
-    # Load the data
-    df = pd.read_csv(uploaded_file)
-
-    # Check for necessary columns
-    has_bat_speed = "Bat Speed (mph)" in df.columns
-    has_exit_velocity = "Velo" in df.columns
-
-    report_body = "<h2>Baseball Metrics Report</h2>"
-
-    if has_bat_speed:
-        # Average Bat Speed
-        player_avg_bat_speed = df["Bat Speed (mph)"].mean()
-
-        # Top 10% Bat Speed and related metrics
-        top_10_percent_bat_speed = df["Bat Speed (mph)"].quantile(0.90)
-        top_10_percent_swings = df[df["Bat Speed (mph)"] >= top_10_percent_bat_speed]
-
-        # Average Attack Angle on Top 10% Bat Speed Swings
-        if "Attack Angle" in df.columns and not top_10_percent_swings.empty:
-            avg_attack_angle_top_10 = top_10_percent_swings["Attack Angle"].mean()
-            report_body += f"<p>Average Attack Angle (Top 10% Bat Speed Swings): {avg_attack_angle_top_10:.2f}°</p>"
-        else:
-            report_body += "<p><em>Not enough data to calculate average attack angle for top 10% bat speed swings.</em></p>"
-
-        # Average Time to Contact
-        if "Time to Contact" in df.columns:
-            avg_time_to_contact = df["Time to Contact"].mean()
-            report_body += f"<p>Average Time to Contact: {avg_time_to_contact:.2f} seconds</p>"
-        else:
-            report_body += "<p><em>Time to Contact data is not available.</em></p>"
-
-        report_body += f"<p>Player Average Bat Speed: {player_avg_bat_speed:.2f} mph</p>"
-        report_body += f"<p>Top 10% Bat Speed: {top_10_percent_bat_speed:.2f} mph</p>"
-
-    if has_exit_velocity:
-        # Average Exit Velocity
-        player_avg_exit_velocity = df["Velo"][df["Velo"] > 0].mean()  # Ignore zero values
-
-        # Top 8% Exit Velocity and related metrics
-        top_8_percent_exit_velocity = df["Velo"].quantile(0.92)
-        top_8_percent_swings = df[df["Velo"] >= top_8_percent_exit_velocity]
-
-        # Average Launch Angle on Top 8% Exit Velocity Swings
-        if "Launch Angle" in df.columns and not top_8_percent_swings.empty:
-            avg_launch_angle_top_8 = top_8_percent_swings["Launch Angle"].mean()
-            report_body += f"<p>Average Launch Angle (Top 8% Exit Velocity Swings): {avg_launch_angle_top_8:.2f}°</p>"
-        else:
-            report_body += "<p><em>Launch Angle data is not available for top 8% exit velocity swings.</em></p>"
-
-        # Average Distance on Top 8% Exit Velocity Swings
-        if "Distance" in df.columns and not top_8_percent_swings.empty:
-            avg_distance_top_8 = top_8_percent_swings["Distance"].mean()
-            report_body += f"<p>Average Distance (Top 8% Exit Velocity Swings): {avg_distance_top_8:.2f} ft</p>"
-        else:
-            report_body += "<p><em>Distance data is not available for top 8% exit velocity swings.</em></p>"
-
-        report_body += f"<p>Player Average Exit Velocity: {player_avg_exit_velocity:.2f} mph</p>"
-        report_body += f"<p>Top 8% Exit Velocity: {top_8_percent_exit_velocity:.2f} mph</p>"
-
-    # Display the report
-    st.write("### Metrics Report")
-    st.markdown(report_body, unsafe_allow_html=True)
-
-    # Option to email the report
-    st.write("### Email the Report")
-    recipient_email = st.text_input("Enter the recipient's email address:")
-    if st.button("Send Report"):
-        if recipient_email:
-            send_email(recipient_email, "Baseball Metrics Report", report_body)
-        else:
-            st.error("Please enter a valid email address.")
+        # Send the email
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(email_address, email_password)
+                server.send_message(msg)
+            st.success("Report sent successfully!")
+        except Exception as e:
+            st.error(f"Failed to send email: {e}")
+    else:
+        st.error("Please enter a valid email address.")
