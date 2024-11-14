@@ -31,8 +31,8 @@ exit_velocity_metrics = ""
 
 # Process Bat Speed File
 if bat_speed_file:
-    # Read Bat Speed data without changing the file reading logic
-    df_bat_speed = pd.read_csv(bat_speed_file, skiprows=20)  # Adjust the `skiprows` based on your original code
+    # Read Bat Speed data using the original skiprows value
+    df_bat_speed = pd.read_csv(bat_speed_file, skiprows=20)
     df_bat_speed.columns = df_bat_speed.columns.str.strip()
 
     # Calculate Bat Speed Metrics
@@ -72,8 +72,8 @@ if bat_speed_file:
 
 # Process Exit Velocity File
 if exit_velocity_file:
-    # Read Exit Velocity data without changing the file reading logic
-    df_exit_velocity = pd.read_csv(exit_velocity_file, skiprows=20)  # Adjust the `skiprows` based on your original code
+    # Read Exit Velocity data using the original skiprows value
+    df_exit_velocity = pd.read_csv(exit_velocity_file, skiprows=20)
     df_exit_velocity.columns = df_exit_velocity.columns.str.strip()
 
     # Calculate Exit Velocity Metrics
@@ -113,39 +113,8 @@ if exit_velocity_file:
 
 # Display Results
 st.write("## Calculated Metrics")
-if exit_velocity_metrics:
-    st.markdown(exit_velocity_metrics)
 if bat_speed_metrics:
     st.markdown(bat_speed_metrics)
-
-# Email Configuration
-email_address = "aadichadha@gmail.com"
-email_password = "eeoi odag olix nnfc"  # Your app-specific password
-smtp_server = "smtp.gmail.com"
-smtp_port = 587
-
-# Option to Email the Report
-st.write("## Email the Report")
-recipient_email = st.text_input("Enter Email Address")
-if st.button("Send Report"):
-    if recipient_email:
-        # Combine the reports for both files
-        report = f"{exit_velocity_metrics}\n\n{bat_speed_metrics}"
-        msg = MIMEMultipart()
-        msg['From'] = email_address
-        msg['To'] = recipient_email
-        msg['Subject'] = "Baseball Metrics Report"
-        msg.attach(MIMEText(report, 'plain'))
-
-        # Send the email
-        try:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_address, email_password)
-                server.send_message(msg)
-            st.success("Report sent successfully!")
-        except Exception as e:
-            st.error(f"Failed to send email: {e}")
-    else:
-        st.error("Please enter a valid email address.")
+if exit_velocity_metrics:
+    st.markdown(exit_velocity_metrics)
 
