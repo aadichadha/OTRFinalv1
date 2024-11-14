@@ -31,8 +31,11 @@ exit_velocity_metrics = ""
 
 # Process Bat Speed File
 if bat_speed_file:
-    df_bat_speed = pd.read_csv(bat_speed_file, skiprows=20)
+    # Skip initial rows and read data
+    df_bat_speed = pd.read_csv(bat_speed_file, skiprows=6)  # Adjust `skiprows` if necessary
     df_bat_speed.columns = df_bat_speed.columns.str.strip()
+    
+    # Assuming the Bat Speed data is in a column named "Bat Speed (mph)"
     bat_speed_data = df_bat_speed["Bat Speed (mph)"]
 
     # Calculate Bat Speed Metrics
@@ -71,8 +74,11 @@ if bat_speed_file:
 
 # Process Exit Velocity File
 if exit_velocity_file:
-    df_exit_velocity = pd.read_csv(exit_velocity_file, skiprows=20)
+    # Skip initial rows and read data
+    df_exit_velocity = pd.read_csv(exit_velocity_file, skiprows=6)  # Adjust `skiprows` if necessary
     df_exit_velocity.columns = df_exit_velocity.columns.str.strip()
+    
+    # Assuming the Exit Velocity data is in a column named "Velo"
     exit_velocity_data = df_exit_velocity["Velo"]
 
     # Ignore zero values for exit velocity
